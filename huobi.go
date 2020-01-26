@@ -1,7 +1,6 @@
 package main
 
-import "log"
-
-func main() {
-	log.Println("ssss")
+type  Exchange struct {
+	name string
 }
+
