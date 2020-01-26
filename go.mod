@@ -1,4 +1,4 @@
-module gihub.com/hstcscolor/huobi
+module github.com/hstcscolor/huobi
 
 go 1.13
 
