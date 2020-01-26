@@ -19,11 +19,15 @@ type Exchange struct {
 func NewExchange(ak, sk string) *Exchange {
 	accessKey = ak
 	secretKey = sk
-	accountId = accessKey
 	huobi := &Exchange{}
 	huobi.name = "huobi"
 	huobi.symbols = huobi.GetSymbols()
-	GetAccounts()
+	accounts := GetAccounts()
+	for _, data := range accounts.Data {
+		if data.Type == `spot` {
+			accountId = cast.ToString(data.ID)
+		}
+	}
 	return huobi
 }
 
