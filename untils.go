@@ -121,16 +121,8 @@ func HttpPostRequest(strUrl string, mapParams map[string]string) string {
 // return: 请求结果
 func ApiKeyGet(mapParams map[string]string, strRequestPath string) string {
 	strMethod := "GET"
+	timestamp := time.Now().UTC().Format("2006-01-02T15:04:05")
 
-	timestamp := time.Now().UTC().Format("2018-12-09T08:27:56")
-
-	// t := time.Now()
-	// temp := time.Date(t.Year(), t.Month(), t.Day(), t.Hour()-8, t.Minute(), t.Second(), t.Nanosecond(), time.Local)
-	// timestamp := temp.Format("2006-01-02T15:04:05")
-
-	//fmt.Println(temp,":timestamp1:",time.Local,timestamp111)
-	//fmt.Println(temp,":timestamp2:",time.Local,timestamp)
-	//"Timestamp" -> "2018-12-09T08:27:56"
 	mapParams["AccessKeyId"] = accessKey
 	mapParams["SignatureMethod"] = "HmacSHA256"
 	mapParams["SignatureVersion"] = "2"

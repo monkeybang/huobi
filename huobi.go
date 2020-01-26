@@ -23,6 +23,7 @@ func NewExchange(ak, sk string) *Exchange {
 	huobi := &Exchange{}
 	huobi.name = "huobi"
 	huobi.symbols = huobi.GetSymbols()
+	GetAccounts()
 	return huobi
 }
 
