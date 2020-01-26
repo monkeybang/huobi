@@ -9,7 +9,7 @@ import (
 
 var MARKET_URL = `https://api.huobi.pro`
 var TRADE_URL = `https://api.huobi.pro`
-var HOST_NAME = `https://api.huobi.pro`
+var HOST_NAME = `api.huobi.pro`
 
 // 获取聚合行情
 // strSymbol: 交易对, btcusdt, bccbtc......
