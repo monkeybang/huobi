@@ -1,6 +1,7 @@
 package huobi
 
 import (
+	"encoding/json"
 	"github.com/spf13/cast"
 	"log"
 	"math"
@@ -12,8 +13,9 @@ var secretKey string
 var accountId string
 
 type Exchange struct {
-	name    string
-	symbols map[string]*SymbolsData
+	name      string
+	accountId string
+	symbols   map[string]*SymbolsData
 }
 
 func NewExchange(ak, sk string) *Exchange {
@@ -25,7 +27,7 @@ func NewExchange(ak, sk string) *Exchange {
 	accounts := GetAccounts()
 	for _, data := range accounts.Data {
 		if data.Type == `spot` {
-			accountId = cast.ToString(data.ID)
+			huobi.accountId = cast.ToString(data.ID)
 		}
 	}
 	return huobi
@@ -69,7 +71,7 @@ func (huobi *Exchange) Trunc(symbol string, price float64, amount float64) (floa
 	return truncPrice, truncAmount
 }
 
-func (huobi *Exchange) BuyLimitEver(symbol string, amount float64, price float64) {
+func (huobi *Exchange) BuyLimitEver(symbol string, amount float64, price float64) string {
 	placeParams := &PlaceRequestParams{}
 	placeParams.AccountID = accountId
 	placeParams.Amount = cast.ToString(amount)
@@ -82,7 +84,7 @@ func (huobi *Exchange) BuyLimitEver(symbol string, amount float64, price float64
 		placeReturn := Place(placeParams)
 		if placeReturn.Status == "ok" {
 			log.Println("Place return:", placeReturn.Data)
-			break
+			return placeReturn.Data
 		} else {
 			log.Println("place error:", placeReturn.ErrMsg)
 			time.Sleep(time.Millisecond * 100)
@@ -90,7 +92,7 @@ func (huobi *Exchange) BuyLimitEver(symbol string, amount float64, price float64
 	}
 }
 
-func (huobi *Exchange) SellLimitEver(symbol string, amount float64, price float64) {
+func (huobi *Exchange) SellLimitEver(symbol string, amount float64, price float64) string {
 	placeParams := &PlaceRequestParams{}
 	placeParams.AccountID = accountId
 	placeParams.Amount = cast.ToString(amount)
@@ -103,7 +105,7 @@ func (huobi *Exchange) SellLimitEver(symbol string, amount float64, price float6
 		placeReturn := Place(placeParams)
 		if placeReturn.Status == "ok" {
 			log.Println("Place return:", placeReturn.Data)
-			break
+			return placeReturn.Data
 		} else {
 			log.Println("place error:", placeReturn.ErrMsg)
 			time.Sleep(time.Millisecond * 100)
@@ -136,4 +138,41 @@ func (huobi *Exchange) BatchCancelOrders(symbol string) {
 	strRequest := "/v1/order/orders/batchCancelOpenOrders"
 	jsonPlaceReturn := ApiKeyPost(make(map[string]string), strRequest)
 	log.Print(jsonPlaceReturn)
+}
+
+func (huobi *Exchange) GetAccountId() string {
+	return huobi.accountId
+}
+
+func (huobi *Exchange) OpenOrders(symbol string) *OrderReturn {
+	params := make(map[string]string)
+	params["account-id"] = accountId
+	params["symbol"] = symbol
+	params["size"] = "500"
+
+	strRequest := "/v1/order/openOrders"
+	str := ApiKeyPost(make(map[string]string), strRequest)
+
+	orderReturn := &OrderReturn{}
+
+	err := json.Unmarshal([]byte(str), orderReturn)
+	if err != nil {
+		log.Println(str, err)
+	}
+	return orderReturn
+}
+
+func (huobi *Exchange) GetOrder(orderId string) *Order {
+	params := make(map[string]string)
+
+	strRequest := "/v1/order/orders/" + cast.ToString(orderId)
+	str := ApiKeyGet(params, strRequest)
+
+	orderReturnSingle := &OrderReturnSingle{}
+	err := json.Unmarshal([]byte(str), orderReturnSingle)
+	if err != nil {
+		log.Println(str, err)
+		return nil
+	}
+	return &orderReturnSingle.Data
 }

@@ -166,6 +166,14 @@ type TickerReturn struct {
 	ErrMsg  string `json:"err-msg"`
 }
 
+func (ticker *TickerReturn) GetBuyPrice() float64 {
+	return ticker.Tick.Bid[0]
+}
+
+func (ticker *TickerReturn) GetSellPrice() float64 {
+	return ticker.Tick.Ask[0]
+}
+
 type TimestampReturn struct {
 	Status  string `json:"status"` // 请求状态
 	Data    int64  `json:"data"`   // 时间戳
@@ -217,4 +225,32 @@ type TradeDetailReturn struct {
 	Ch      string      `json:"ch"`       // 数据所属的Channel, 格式: market.$symbol.trade.detail
 	ErrCode string      `json:"err-code"` // 错误代码
 	ErrMsg  string      `json:"err-msg"`  // 错误提示
+}
+
+type Order struct {
+	ID               int64 `json:"id"`
+	Symbol           string
+	AccountId        int64 `json:"account-id"`
+	Amount           string
+	Price            string
+	CreateAt         int64
+	Type             string
+	FilledAmount     string `json:"filled-amount"`
+	FilledCashAmount string `json:"filled-cash-amount"`
+	Source           string
+	State            string
+}
+
+func (order *Order) String() string {
+	return order.Type + " amount:" + order.Amount + " price:" + order.Price
+}
+
+type OrderReturn struct {
+	Status string  `json:"status"`
+	Data   []Order `json:"data"`
+}
+
+type OrderReturnSingle struct {
+	Status string `json:"status"`
+	Data   Order  `json:"data"`
 }

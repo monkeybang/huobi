@@ -27,6 +27,7 @@ func GetTicker(strSymbol string) *TickerReturn {
 	err := json.Unmarshal([]byte(jsonTickReturn), tickerReturn)
 	if err != nil {
 		log.Print(err)
+		return nil
 	}
 	return tickerReturn
 }
