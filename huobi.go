@@ -36,9 +36,9 @@ func NewExchange(ak, sk string) *Exchange {
 func (huobi *Exchange) GetSymbols() map[string]*SymbolsData {
 	symbolMap := make(map[string]*SymbolsData)
 	symbolsReturn := GetSymbols()
-	if symbolsReturn.Status != "ok" {
+	if symbolsReturn.Status == "ok" {
 		for i := range symbolsReturn.Data {
-			symbolMap[symbolsReturn.Data[i].SymbolPartition] = symbolsReturn.Data[i]
+			symbolMap[symbolsReturn.Data[i].BaseCurrency+symbolsReturn.Data[i].QuoteCurrency] = symbolsReturn.Data[i]
 		}
 	}
 	return symbolMap
