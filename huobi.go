@@ -10,7 +10,6 @@ import (
 
 var accessKey string
 var secretKey string
-var accountId string
 
 type Exchange struct {
 	name      string
@@ -73,7 +72,7 @@ func (huobi *Exchange) Trunc(symbol string, price float64, amount float64) (floa
 
 func (huobi *Exchange) BuyLimitEver(symbol string, amount float64, price float64) string {
 	placeParams := &PlaceRequestParams{}
-	placeParams.AccountID = accountId
+	placeParams.AccountID = huobi.accountId
 	placeParams.Amount = cast.ToString(amount)
 	placeParams.Price = cast.ToString(price)
 	placeParams.Source = "api"
@@ -94,7 +93,7 @@ func (huobi *Exchange) BuyLimitEver(symbol string, amount float64, price float64
 
 func (huobi *Exchange) SellLimitEver(symbol string, amount float64, price float64) string {
 	placeParams := &PlaceRequestParams{}
-	placeParams.AccountID = accountId
+	placeParams.AccountID = huobi.accountId
 	placeParams.Amount = cast.ToString(amount)
 	placeParams.Price = cast.ToString(price)
 	placeParams.Source = "api"
@@ -115,7 +114,7 @@ func (huobi *Exchange) SellLimitEver(symbol string, amount float64, price float6
 
 func (huobi *Exchange) PlaceOrder(symbol string, orderType string, amount float64, price float64) {
 	placeParams := &PlaceRequestParams{}
-	placeParams.AccountID = accountId
+	placeParams.AccountID = huobi.accountId
 	placeParams.Amount = cast.ToString(amount)
 	placeParams.Price = cast.ToString(price)
 	placeParams.Source = "api"
@@ -132,7 +131,7 @@ func (huobi *Exchange) PlaceOrder(symbol string, orderType string, amount float6
 
 func (huobi *Exchange) BatchCancelOrders(symbol string) {
 	params := make(map[string]string)
-	params["account-id"] = accountId
+	params["account-id"] = huobi.accountId
 	params["symbol"] = symbol
 
 	strRequest := "/v1/order/orders/batchCancelOpenOrders"
@@ -146,12 +145,12 @@ func (huobi *Exchange) GetAccountId() string {
 
 func (huobi *Exchange) OpenOrders(symbol string) *OrderReturn {
 	params := make(map[string]string)
-	params["account-id"] = accountId
+	params["account-id"] = huobi.accountId
 	params["symbol"] = symbol
 	params["size"] = "500"
 
 	strRequest := "/v1/order/openOrders"
-	str := ApiKeyPost(make(map[string]string), strRequest)
+	str := ApiKeyGet(make(map[string]string), strRequest)
 
 	orderReturn := &OrderReturn{}
 
