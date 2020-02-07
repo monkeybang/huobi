@@ -2,6 +2,7 @@ package huobi
 
 import (
 	"encoding/json"
+	"errors"
 	"github.com/spf13/cast"
 	"log"
 	"math"
@@ -70,7 +71,7 @@ func (huobi *Exchange) Trunc(symbol string, price float64, amount float64) (floa
 	return truncPrice, truncAmount
 }
 
-func (huobi *Exchange) BuyLimitEver(symbol string, amount float64, price float64) string {
+func (huobi *Exchange) BuyLimitEver(symbol string, amount float64, price float64) (string, error) {
 	placeParams := &PlaceRequestParams{}
 	placeParams.AccountID = huobi.accountId
 	placeParams.Amount = cast.ToString(amount)
@@ -79,19 +80,22 @@ func (huobi *Exchange) BuyLimitEver(symbol string, amount float64, price float64
 	placeParams.Symbol = symbol
 	placeParams.Type = "buy-limit"
 
-	for {
+	times := 20
+	for times > 0 {
+		times--
 		placeReturn := Place(placeParams)
 		if placeReturn.Status == "ok" {
 			log.Println("Place return:", placeReturn.Data)
-			return placeReturn.Data
+			return placeReturn.Data, nil
 		} else {
-			log.Println("place error:", placeReturn.ErrMsg)
+			log.Println("place error:", placeReturn.ErrMsg, amount, price)
 			time.Sleep(time.Millisecond * 100)
 		}
 	}
+	return "", errors.New("buy failed")
 }
 
-func (huobi *Exchange) SellLimitEver(symbol string, amount float64, price float64) string {
+func (huobi *Exchange) SellLimitEver(symbol string, amount float64, price float64) (string, error) {
 	placeParams := &PlaceRequestParams{}
 	placeParams.AccountID = huobi.accountId
 	placeParams.Amount = cast.ToString(amount)
@@ -100,16 +104,19 @@ func (huobi *Exchange) SellLimitEver(symbol string, amount float64, price float6
 	placeParams.Symbol = symbol
 	placeParams.Type = "sell-limit"
 
-	for {
+	times := 20
+	for times > 0 {
+		times--
 		placeReturn := Place(placeParams)
 		if placeReturn.Status == "ok" {
 			log.Println("Place return:", placeReturn.Data)
-			return placeReturn.Data
+			return placeReturn.Data, nil
 		} else {
 			log.Println("place error:", placeReturn.ErrMsg)
 			time.Sleep(time.Millisecond * 100)
 		}
 	}
+	return "", errors.New("buy failed")
 }
 
 func (huobi *Exchange) PlaceOrder(symbol string, orderType string, amount float64, price float64) {
