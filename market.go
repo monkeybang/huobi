@@ -116,6 +116,23 @@ func GetMarketDetail(strSymbol string) *MarketDetailReturn {
 	return marketDetailReturn
 }
 
+func GetKline(strSymbol string) *KLineReturn {
+	kLineReturn := &KLineReturn{}
+
+	mapParams := make(map[string]string)
+	mapParams["symbol"] = strSymbol
+
+	strRequestUrl := "/market/history/kline"
+	strUrl := MARKET_URL + strRequestUrl
+
+	jsonMarketKlineReturn := HttpGetRequest(strUrl, mapParams)
+	err := json.Unmarshal([]byte(jsonMarketKlineReturn), &kLineReturn)
+	if err != nil {
+		log.Println(err)
+	}
+	return kLineReturn
+}
+
 //----------------------------------------
 // 公共API
 
