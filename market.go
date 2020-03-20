@@ -3,6 +3,7 @@ package huobi
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/spf13/cast"
 	"log"
 	"strconv"
 )
@@ -116,11 +117,13 @@ func GetMarketDetail(strSymbol string) *MarketDetailReturn {
 	return marketDetailReturn
 }
 
-func GetKline(strSymbol string) *KLineReturn {
+func GetKline(period, strSymbol string, size int64) *KLineReturn {
 	kLineReturn := &KLineReturn{}
 
 	mapParams := make(map[string]string)
 	mapParams["symbol"] = strSymbol
+	mapParams["period"] = period
+	mapParams["size"] = cast.ToString(size)
 
 	strRequestUrl := "/market/history/kline"
 	strUrl := MARKET_URL + strRequestUrl
