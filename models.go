@@ -2,6 +2,7 @@ package huobi
 
 import (
 	"encoding/json"
+	"github.com/spf13/cast"
 	"log"
 )
 
@@ -239,6 +240,10 @@ type Order struct {
 	FilledCashAmount string `json:"filled-cash-amount"`
 	Source           string
 	State            string
+}
+
+func (order *Order) GetFilledAmount() float64 {
+	return cast.ToFloat64(order.FilledAmount)
 }
 
 func (order *Order) String() string {
