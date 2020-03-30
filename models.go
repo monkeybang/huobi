@@ -246,8 +246,19 @@ func (order *Order) GetFilledAmount() float64 {
 	return cast.ToFloat64(order.FilledAmount)
 }
 
+func (order *Order) GetUnFilledAmount() float64 {
+	return cast.ToFloat64(order.FilledAmount) - cast.ToFloat64(order.Amount)
+}
+
+func (order *Order) GetAmount() float64 {
+	return cast.ToFloat64(order.Amount)
+}
 func (order *Order) String() string {
 	return order.Type + " amount:" + order.Amount + " price:" + order.Price
+}
+
+func (order *Order) IsFilled() bool {
+	return order.State == "filled"
 }
 
 type OrderReturn struct {
