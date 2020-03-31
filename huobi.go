@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"github.com/spf13/cast"
+	"github.com/tidwall/gjson"
 	"log"
 	"math"
 	"time"
@@ -181,4 +182,13 @@ func (huobi *Exchange) GetOrder(orderId string) *Order {
 		return nil
 	}
 	return &orderReturnSingle.Data
+}
+
+func (huobi *Exchange) CancelOrder(orderId string) string {
+	params := make(map[string]string)
+
+	strRequest := "/v1/order/orders/" + orderId + "/submitcancel"
+	str := ApiKeyPost(params, strRequest)
+	id := gjson.Get(str, "data").String()
+	return id
 }
