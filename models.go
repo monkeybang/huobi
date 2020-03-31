@@ -253,6 +253,11 @@ func (order *Order) GetUnFilledAmount() float64 {
 func (order *Order) GetAmount() float64 {
 	return cast.ToFloat64(order.Amount)
 }
+
+func (order *Order) GetPrice() float64 {
+	return cast.ToFloat64(order.Price)
+}
+
 func (order *Order) String() string {
 	return order.Type + " amount:" + order.Amount + " price:" + order.Price
 }
