@@ -131,11 +131,13 @@ type PlaceReturn struct {
 }
 
 type SymbolsData struct {
-	BaseCurrency    string `json:"base-currency"`    // 基础币种
-	QuoteCurrency   string `json:"quote-currency"`   // 计价币种
-	PricePrecision  int    `json:"price-precision"`  // 价格精度位数(0为个位)
-	AmountPrecision int    `json:"amount-precision"` // 数量精度位数(0为个位)
-	SymbolPartition string `json:"symbol-partition"` // 交易区, main: 主区, innovation: 创新区, bifurcation: 分叉区
+	BaseCurrency          string  `json:"base-currency"`    // 基础币种
+	QuoteCurrency         string  `json:"quote-currency"`   // 计价币种
+	PricePrecision        int     `json:"price-precision"`  // 价格精度位数(0为个位)
+	AmountPrecision       int     `json:"amount-precision"` // 数量精度位数(0为个位)
+	SymbolPartition       string  `json:"symbol-partition"` // 交易区, main: 主区, innovation: 创新区, bifurcation: 分叉区
+	LimitOrderMinOrderAmt float64 `json:"limit-order-min-order-amt"`
+	LimitOrderMaxOrderAmt float64 `json:"limit-order-max-order-amt"`
 }
 
 type SymbolsReturn struct {
@@ -165,6 +167,10 @@ type TickerReturn struct {
 	Ch      string `json:"ch"`     // 数据所属的Channel, 格式: market.$symbol.detail.merged
 	ErrCode string `json:"err-code"`
 	ErrMsg  string `json:"err-msg"`
+}
+
+func (ticker *TickerReturn) GetPrice() float64 {
+	return ticker.Tick.Close
 }
 
 func (ticker *TickerReturn) GetBuyPrice() float64 {
@@ -236,8 +242,8 @@ type Order struct {
 	Price            string
 	CreateAt         int64
 	Type             string
-	FilledAmount     string `json:"filled-amount"`
-	FilledCashAmount string `json:"filled-cash-amount"`
+	FilledAmount     string `json:"field-amount"`
+	FilledCashAmount string `json:"field-cash-amount"`
 	Source           string
 	State            string
 }
@@ -247,7 +253,7 @@ func (order *Order) GetFilledAmount() float64 {
 }
 
 func (order *Order) GetUnFilledAmount() float64 {
-	return cast.ToFloat64(order.FilledAmount) - cast.ToFloat64(order.Amount)
+	return cast.ToFloat64(order.Amount) - cast.ToFloat64(order.FilledAmount)
 }
 
 func (order *Order) GetAmount() float64 {
@@ -274,4 +280,27 @@ type OrderReturn struct {
 type OrderReturnSingle struct {
 	Status string `json:"status"`
 	Data   Order  `json:"data"`
+}
+
+type Aggregate struct {
+	Status string `json:"status"`
+	Data   []*SubAccount
+}
+
+type ContractSubAccount struct {
+	SubUid int64
+	List   []*ContractSymbolAccount
+}
+
+type ContractSymbolAccount struct {
+	Symbol           string
+	MarginBalance    float64 `json:"margin_balance"`
+	LiquidationPrice float64 `json:"liquidation_price"`
+	RiskRate         float64 `json:"risk_rate"`
+}
+
+type ContractAggregate struct {
+	Status string `json:"status"`
+	Ts     int64
+	Data   []*ContractSubAccount
 }

@@ -10,28 +10,28 @@ import (
 	"time"
 )
 
-var accessKey string
-var secretKey string
-
 type Exchange struct {
 	name      string
 	accountId string
+	accessKey string
+	secretKey string
 	symbols   map[string]*SymbolsData
 }
 
 func NewExchange(ak, sk string) *Exchange {
-	accessKey = ak
-	secretKey = sk
-	huobi := &Exchange{}
-	huobi.name = "huobi"
-	huobi.symbols = huobi.GetSymbols()
-	accounts := GetAccounts()
+	ex := &Exchange{
+		accessKey: ak,
+		secretKey: sk,
+	}
+	ex.name = "huobi"
+	ex.symbols = ex.GetSymbols()
+	accounts := ex.GetAccounts()
 	for _, data := range accounts.Data {
 		if data.Type == `spot` {
-			huobi.accountId = cast.ToString(data.ID)
+			ex.accountId = cast.ToString(data.ID)
 		}
 	}
-	return huobi
+	return ex
 }
 
 func (huobi *Exchange) GetSymbols() map[string]*SymbolsData {
@@ -84,9 +84,9 @@ func (huobi *Exchange) BuyLimitEver(symbol string, amount float64, price float64
 	times := 20
 	for times > 0 {
 		times--
-		placeReturn := Place(placeParams)
+		placeReturn := huobi.Place(placeParams)
 		if placeReturn.Status == "ok" {
-			log.Println("Place return:", placeReturn.Data)
+			//log.Println("Place return:", placeReturn.Data)
 			return placeReturn.Data, nil
 		} else {
 			log.Println("place error:", placeReturn.ErrMsg, amount, price)
@@ -108,12 +108,12 @@ func (huobi *Exchange) SellLimitEver(symbol string, amount float64, price float6
 	times := 20
 	for times > 0 {
 		times--
-		placeReturn := Place(placeParams)
+		placeReturn := huobi.Place(placeParams)
 		if placeReturn.Status == "ok" {
-			log.Println("Place return:", placeReturn.Data)
+			//log.Println("Place return:", placeReturn.Data)
 			return placeReturn.Data, nil
 		} else {
-			log.Println("place error:", placeReturn.ErrMsg)
+			log.Println("place error:", placeReturn.ErrMsg, amount, price, symbol)
 			time.Sleep(time.Millisecond * 100)
 		}
 	}
@@ -129,7 +129,7 @@ func (huobi *Exchange) PlaceOrder(symbol string, orderType string, amount float6
 	placeParams.Symbol = symbol
 	placeParams.Type = orderType
 
-	placeReturn := Place(placeParams)
+	placeReturn := huobi.Place(placeParams)
 	if placeReturn.Status == "ok" {
 		log.Print("Place return :", placeReturn.Data)
 	} else {
@@ -137,13 +137,13 @@ func (huobi *Exchange) PlaceOrder(symbol string, orderType string, amount float6
 	}
 }
 
-func (huobi *Exchange) BatchCancelOrders(symbol string) {
+func (ex *Exchange) BatchCancelOrders(symbol string) {
 	params := make(map[string]string)
-	params["account-id"] = huobi.accountId
+	params["account-id"] = ex.accountId
 	params["symbol"] = symbol
 
 	strRequest := "/v1/order/orders/batchCancelOpenOrders"
-	jsonPlaceReturn := ApiKeyPost(make(map[string]string), strRequest)
+	jsonPlaceReturn := ex.ApiKeyPost(make(map[string]string), strRequest)
 	log.Print(jsonPlaceReturn)
 }
 
@@ -151,14 +151,14 @@ func (huobi *Exchange) GetAccountId() string {
 	return huobi.accountId
 }
 
-func (huobi *Exchange) OpenOrders(symbol string) *OrderReturn {
+func (ex *Exchange) OpenOrders(symbol string) *OrderReturn {
 	params := make(map[string]string)
-	params["account-id"] = huobi.accountId
+	params["account-id"] = ex.accountId
 	params["symbol"] = symbol
 	params["size"] = "500"
 
 	strRequest := "/v1/order/openOrders"
-	str := ApiKeyGet(make(map[string]string), strRequest)
+	str := ex.ApiKeyGet(make(map[string]string), strRequest)
 
 	orderReturn := &OrderReturn{}
 
@@ -169,11 +169,12 @@ func (huobi *Exchange) OpenOrders(symbol string) *OrderReturn {
 	return orderReturn
 }
 
-func (huobi *Exchange) GetOrder(orderId string) *Order {
+func (ex *Exchange) GetOrder(orderId string) *Order {
 	params := make(map[string]string)
 
 	strRequest := "/v1/order/orders/" + cast.ToString(orderId)
-	str := ApiKeyGet(params, strRequest)
+	str := ex.ApiKeyGet(params, strRequest)
+	//log.Println(str)
 
 	orderReturnSingle := &OrderReturnSingle{}
 	err := json.Unmarshal([]byte(str), orderReturnSingle)
@@ -184,11 +185,112 @@ func (huobi *Exchange) GetOrder(orderId string) *Order {
 	return &orderReturnSingle.Data
 }
 
-func (huobi *Exchange) CancelOrder(orderId string) string {
+func (ex *Exchange) CancelOrder(orderId string) string {
 	params := make(map[string]string)
 
 	strRequest := "/v1/order/orders/" + orderId + "/submitcancel"
-	str := ApiKeyPost(params, strRequest)
+	str := ex.ApiKeyPost(params, strRequest)
 	id := gjson.Get(str, "data").String()
 	return id
+}
+
+func (ex *Exchange) EtpRedemption(symbol, usdt string, amount float64) string {
+	mapParams := make(map[string]string)
+	mapParams["etpName"] = symbol
+	mapParams["currency"] = usdt
+	mapParams["amount"] = cast.ToString(amount)
+	strRequestUrl := "/v2/etp/redemption"
+	jsonMarketDetailReturn := ex.ApiKeyPost(mapParams, strRequestUrl)
+	return jsonMarketDetailReturn
+}
+
+func (ex *Exchange) getEtpTransaction(id string) string {
+	mapParams := make(map[string]string)
+	mapParams["transactId"] = id
+	strRequestUrl := "/v2/etp/transaction"
+	jsonMarketDetailReturn := ex.ApiKeyGet(mapParams, strRequestUrl)
+	return jsonMarketDetailReturn
+}
+
+func (ex *Exchange) GetAggregateBalance() *Aggregate {
+	mapParams := make(map[string]string)
+	strRequestUrl := "/v1/subuser/aggregate-balance"
+	resp := ex.ApiKeyGet(mapParams, strRequestUrl)
+	//log.Println(resp)
+	aggregate := &Aggregate{}
+	err := json.Unmarshal([]byte(resp), aggregate)
+	if err != nil {
+		log.Println(err, resp)
+		return nil
+	}
+	if gjson.Get(resp, "status").String() == "error" {
+		log.Println(resp)
+	}
+	return aggregate
+}
+
+func (ex *Exchange) GetContractPositionInfo() *ContractAggregate {
+	mapParam := make(map[string]string)
+	strUrl := "/api/v1/contract_sub_account_list"
+	resp := ex.ContractKeyPost(mapParam, strUrl)
+	agg := &ContractAggregate{}
+	err := json.Unmarshal([]byte(resp), agg)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	return agg
+}
+
+func (ex *Exchange) GetSwapPositionInfo() *ContractAggregate {
+	mapParam := make(map[string]string)
+	strUrl := "/swap-api/v1/swap_sub_account_list"
+	resp := ex.ContractKeyPost(mapParam, strUrl)
+	agg := &ContractAggregate{}
+	err := json.Unmarshal([]byte(resp), agg)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	return agg
+}
+
+func (ex *Exchange) GetLinearSwapPositionInfo() *ContractAggregate {
+	mapParam := make(map[string]string)
+	strUrl := "/linear-swap-api/v1/swap_sub_account_list"
+	resp := ex.ContractKeyPost(mapParam, strUrl)
+	agg := &ContractAggregate{}
+	err := json.Unmarshal([]byte(resp), agg)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	return agg
+}
+
+func (ex *Exchange) GetLinearSwapCrossPositionInfo() *ContractAggregate {
+	mapParam := make(map[string]string)
+	strUrl := "/linear-swap-api/v1/swap_cross_sub_account_list"
+	resp := ex.ContractKeyPost(mapParam, strUrl)
+	agg := &ContractAggregate{}
+	err := json.Unmarshal([]byte(resp), agg)
+	if err != nil {
+		log.Println(err, resp)
+		return nil
+	}
+	return agg
+}
+
+func (ex *Exchange) GetOptionPositionInfo() *ContractAggregate {
+	mapParam := make(map[string]string)
+	strUrl := "/option-api/v1/option_sub_account_list"
+	resp := ex.ContractKeyPost(mapParam, strUrl)
+	log.Println(resp)
+	agg := &ContractAggregate{}
+	err := json.Unmarshal([]byte(resp), agg)
+	if err != nil {
+		log.Println(err)
+		return nil
+	}
+	return agg
 }

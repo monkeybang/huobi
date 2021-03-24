@@ -4,13 +4,16 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/spf13/cast"
+	"github.com/tidwall/gjson"
 	"log"
 	"strconv"
 )
 
-var MARKET_URL = `https://api.huobi.pro`
-var TRADE_URL = `https://api.huobi.pro`
-var HOST_NAME = `api.huobi.pro`
+var MARKET_URL = `https://api.huobi.fm`
+var TRADE_URL = `https://api.huobi.fm`
+var HOST_NAME = `api.huobi.fm`
+var CONTRACT_URL = `https://api.hbdm.com`
+var HOST_CONTRACT = `api.hbdm.com`
 
 // 获取聚合行情
 // strSymbol: 交易对, btcusdt, bccbtc......
@@ -127,7 +130,6 @@ func GetKline(period, strSymbol string, size int64) *KLineReturn {
 
 	strRequestUrl := "/market/history/kline"
 	strUrl := MARKET_URL + strRequestUrl
-
 	jsonMarketKlineReturn := HttpGetRequest(strUrl, mapParams)
 	err := json.Unmarshal([]byte(jsonMarketKlineReturn), &kLineReturn)
 	if err != nil {
@@ -192,14 +194,13 @@ func GetTimestamp() *TimestampReturn {
 
 // 查询当前用户的所有账户, 根据包含的私钥查询
 // return: AccountsReturn对象
-func GetAccounts() *AccountsReturn {
+func (ex *Exchange) GetAccounts() *AccountsReturn {
 	accountsReturn := &AccountsReturn{}
-
 	strRequest := "/v1/account/accounts"
-	jsonAccountsReturn := ApiKeyGet(make(map[string]string), strRequest)
+	jsonAccountsReturn := ex.ApiKeyGet(make(map[string]string), strRequest)
 	err := json.Unmarshal([]byte(jsonAccountsReturn), &accountsReturn)
 	if err != nil {
-		log.Println(err)
+		log.Println(err, strRequest)
 	}
 	return accountsReturn
 }
@@ -207,15 +208,18 @@ func GetAccounts() *AccountsReturn {
 // 根据账户ID查询账户余额
 // nAccountID: 账户ID, 不知道的话可以通过GetAccounts()获取, 可以只现货账户, C2C账户, 期货账户
 // return: BalanceReturn对象
-func GetAccountBalance(strAccountID string) *BalanceReturn {
+func (ex *Exchange) GetAccountBalance(strAccountID string) *BalanceReturn {
 	balanceReturn := &BalanceReturn{}
-
 	strRequest := fmt.Sprintf("/v1/account/accounts/%s/balance", strAccountID)
-	jsonBanlanceReturn := ApiKeyGet(make(map[string]string), strRequest)
+	jsonBanlanceReturn := ex.ApiKeyGet(make(map[string]string), strRequest)
+	if result := gjson.Get(jsonBanlanceReturn, "data"); !result.Exists() {
+		log.Println(jsonBanlanceReturn)
+	}
 	err := json.Unmarshal([]byte(jsonBanlanceReturn), &balanceReturn)
 	if err != nil {
-		log.Println(err)
+		log.Println(err, strRequest)
 	}
+
 	return balanceReturn
 }
 
@@ -225,7 +229,7 @@ func GetAccountBalance(strAccountID string) *BalanceReturn {
 // 下单
 // placeRequestParams: 下单信息
 // return: PlaceReturn对象
-func Place(placeRequestParams *PlaceRequestParams) *PlaceReturn {
+func (ex *Exchange) Place(placeRequestParams *PlaceRequestParams) *PlaceReturn {
 	placeReturn := &PlaceReturn{}
 
 	mapParams := make(map[string]string)
@@ -241,7 +245,7 @@ func Place(placeRequestParams *PlaceRequestParams) *PlaceReturn {
 	mapParams["type"] = placeRequestParams.Type
 
 	strRequest := "/v1/order/orders/place"
-	jsonPlaceReturn := ApiKeyPost(mapParams, strRequest)
+	jsonPlaceReturn := ex.ApiKeyPost(mapParams, strRequest)
 	err := json.Unmarshal([]byte(jsonPlaceReturn), &placeReturn)
 	if err != nil {
 		log.Println(err)
@@ -252,14 +256,33 @@ func Place(placeRequestParams *PlaceRequestParams) *PlaceReturn {
 // 申请撤销一个订单请求
 // strOrderID: 订单ID
 // return: PlaceReturn对象
-func SubmitCancel(strOrderID string) *PlaceReturn {
+func (ex *Exchange) SubmitCancel(strOrderID string) *PlaceReturn {
 	placeReturn := &PlaceReturn{}
 
 	strRequest := fmt.Sprintf("/v1/order/orders/%s/submitcancel", strOrderID)
-	jsonPlaceReturn := ApiKeyPost(make(map[string]string), strRequest)
+	jsonPlaceReturn := ex.ApiKeyPost(make(map[string]string), strRequest)
 	err := json.Unmarshal([]byte(jsonPlaceReturn), &placeReturn)
 	if err != nil {
 		log.Println(err)
 	}
 	return placeReturn
+}
+
+type EtpMarket struct {
+	Symbol  string
+	Nav     float64
+	NavTime int64
+}
+
+func GetEtpNav(symbol string) float64 {
+
+	mapParams := make(map[string]string)
+	mapParams["symbol"] = symbol
+
+	strRequestUrl := "/market/etp"
+	strUrl := MARKET_URL + strRequestUrl
+
+	jsonMarketDetailReturn := HttpGetRequest(strUrl, mapParams)
+	return gjson.Get(jsonMarketDetailReturn, "tick.nav").Float()
+
 }

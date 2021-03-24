@@ -115,21 +115,39 @@ func HttpPostRequest(strUrl string, mapParams map[string]string) string {
 	return string(body)
 }
 
+func (ex *Exchange) ContractKeyGet(mapParams map[string]string, strRequestPath string) string {
+	strMethod := "GET"
+	timestamp := time.Now().UTC().Format("2006-01-02T15:04:05")
+
+	mapParams["AccessKeyId"] = ex.accessKey
+	mapParams["SignatureMethod"] = "HmacSHA256"
+	mapParams["SignatureVersion"] = "2"
+	mapParams["Timestamp"] = timestamp
+
+	hostName := HOST_CONTRACT
+	mapParams["Signature"] = CreateSign(mapParams, strMethod, hostName, strRequestPath, ex.secretKey)
+
+	strUrl := CONTRACT_URL + strRequestPath
+
+	return HttpGetRequest(strUrl, MapValueEncodeURI(mapParams))
+}
+
 // 进行签名后的HTTP GET请求, 参考官方Python Demo写的
 // mapParams: map类型的请求参数, key:value
 // strRequest: API路由路径
 // return: 请求结果
-func ApiKeyGet(mapParams map[string]string, strRequestPath string) string {
+func (ex *Exchange) ApiKeyGet(mapParams map[string]string, strRequestPath string) string {
 	strMethod := "GET"
 	timestamp := time.Now().UTC().Format("2006-01-02T15:04:05")
+	//timestamp := "2020-09-12T08:45:34"
 
-	mapParams["AccessKeyId"] = accessKey
+	mapParams["AccessKeyId"] = ex.accessKey
 	mapParams["SignatureMethod"] = "HmacSHA256"
 	mapParams["SignatureVersion"] = "2"
 	mapParams["Timestamp"] = timestamp
 
 	hostName := HOST_NAME
-	mapParams["Signature"] = CreateSign(mapParams, strMethod, hostName, strRequestPath, secretKey)
+	mapParams["Signature"] = CreateSign(mapParams, strMethod, hostName, strRequestPath, ex.secretKey)
 
 	strUrl := TRADE_URL + strRequestPath
 
@@ -140,7 +158,7 @@ func ApiKeyGet(mapParams map[string]string, strRequestPath string) string {
 // mapParams: map类型的请求参数, key:value
 // strRequest: API路由路径
 // return: 请求结果
-func ApiKeyGetOrder(mapParams map[string]string, strRequestPath string) map[string]string {
+func (ex *Exchange) ApiKeyGetOrder(mapParams map[string]string, strRequestPath string) map[string]string {
 	strMethod := "GET"
 
 	timestamp := time.Now().UTC().Format("2006-01-02T15:04:05")
@@ -151,22 +169,21 @@ func ApiKeyGetOrder(mapParams map[string]string, strRequestPath string) map[stri
 	//temp := time.Date(t.Year(), t.Month(), t.Day(), t.Hour()-timezone, t.Minute(), t.Second(), t.Nanosecond(), time.Local)
 	//timestamp := temp.Format("2006-01-02T15:04:05")
 
-	mapParams["AccessKeyId"] = accessKey
+	mapParams["AccessKeyId"] = ex.accessKey
 	mapParams["SignatureMethod"] = "HmacSHA256"
 	mapParams["SignatureVersion"] = "2"
 	mapParams["Timestamp"] = timestamp
 
 	hostName := HOST_NAME
 
-	mapParams["Signature"] = CreateSign(mapParams, strMethod, hostName, strRequestPath, secretKey)
+	mapParams["Signature"] = CreateSign(mapParams, strMethod, hostName, strRequestPath, ex.secretKey)
 
 	mapParams["op"] = "auth"
 	mapParams["type"] = "api"
 
 	return mapParams
-
 }
-func ApiKeyPostBatchorder(mapParams map[string]interface{}, strRequestPath string) string {
+func (ex *Exchange) ApiKeyPostBatchorder(mapParams map[string]interface{}, strRequestPath string) string {
 	strMethod := "POST"
 	timestamp := time.Now().UTC().Format("2006-01-02T15:04:05")
 
@@ -176,14 +193,14 @@ func ApiKeyPostBatchorder(mapParams map[string]interface{}, strRequestPath strin
 	// fmt.Println(t, ":timestamp:", timestamp)
 
 	mapParams2Sign := make(map[string]string)
-	mapParams2Sign["AccessKeyId"] = accessKey
+	mapParams2Sign["AccessKeyId"] = ex.accessKey
 	mapParams2Sign["SignatureMethod"] = "HmacSHA256"
 	mapParams2Sign["SignatureVersion"] = "2"
 	mapParams2Sign["Timestamp"] = timestamp
 
 	hostName := HOST_NAME
 
-	mapParams2Sign["Signature"] = CreateSign(mapParams2Sign, strMethod, hostName, strRequestPath, secretKey)
+	mapParams2Sign["Signature"] = CreateSign(mapParams2Sign, strMethod, hostName, strRequestPath, ex.secretKey)
 
 	strUrl := TRADE_URL + strRequestPath + "?" + Map2UrlQuery(MapValueEncodeURI(mapParams2Sign))
 
@@ -194,7 +211,7 @@ func ApiKeyPostBatchorder(mapParams map[string]interface{}, strRequestPath strin
 // mapParams: map类型的请求参数, key:value
 // strRequest: API路由路径
 // return: 请求结果
-func ApiKeyPost(mapParams map[string]string, strRequestPath string) string {
+func (ex *Exchange) ContractKeyPost(mapParams map[string]string, strRequestPath string) string {
 	strMethod := "POST"
 	timestamp := time.Now().UTC().Format("2006-01-02T15:04:05")
 	// t := time.Now()
@@ -203,14 +220,41 @@ func ApiKeyPost(mapParams map[string]string, strRequestPath string) string {
 	//fmt.Println(":timestamp:", timestamp)
 
 	mapParams2Sign := make(map[string]string)
-	mapParams2Sign["AccessKeyId"] = accessKey
+	mapParams2Sign["AccessKeyId"] = ex.accessKey
+	mapParams2Sign["SignatureMethod"] = "HmacSHA256"
+	mapParams2Sign["SignatureVersion"] = "2"
+	mapParams2Sign["Timestamp"] = timestamp
+
+	hostName := HOST_CONTRACT
+
+	mapParams2Sign["Signature"] = CreateSign(mapParams2Sign, strMethod, hostName, strRequestPath, ex.secretKey)
+
+	strUrl := CONTRACT_URL + strRequestPath + "?" + Map2UrlQuery(MapValueEncodeURI(mapParams2Sign))
+
+	return HttpPostRequest(strUrl, mapParams)
+}
+
+// 进行签名后的HTTP POST请求, 参考官方Python Demo写的
+// mapParams: map类型的请求参数, key:value
+// strRequest: API路由路径
+// return: 请求结果
+func (ex *Exchange) ApiKeyPost(mapParams map[string]string, strRequestPath string) string {
+	strMethod := "POST"
+	timestamp := time.Now().UTC().Format("2006-01-02T15:04:05")
+	// t := time.Now()
+	// temp := time.Date(t.Year(), t.Month(), t.Day(), t.Hour()-6, t.Minute(), t.Second(), t.Nanosecond(), time.Local)
+	// timestamp := temp.Format("2006-01-02T15:04:05")
+	//fmt.Println(":timestamp:", timestamp)
+
+	mapParams2Sign := make(map[string]string)
+	mapParams2Sign["AccessKeyId"] = ex.accessKey
 	mapParams2Sign["SignatureMethod"] = "HmacSHA256"
 	mapParams2Sign["SignatureVersion"] = "2"
 	mapParams2Sign["Timestamp"] = timestamp
 
 	hostName := HOST_NAME
 
-	mapParams2Sign["Signature"] = CreateSign(mapParams2Sign, strMethod, hostName, strRequestPath, secretKey)
+	mapParams2Sign["Signature"] = CreateSign(mapParams2Sign, strMethod, hostName, strRequestPath, ex.secretKey)
 
 	strUrl := TRADE_URL + strRequestPath + "?" + Map2UrlQuery(MapValueEncodeURI(mapParams2Sign))
 
@@ -221,7 +265,7 @@ func ApiKeyPost(mapParams map[string]string, strRequestPath string) string {
 // mapParams: map类型的请求参数, key:value
 // strRequest: API路由路径
 // return: 请求结果
-func ApiKeyPostOrder(mapParams map[string]string, strRequestPath string) map[string]string {
+func (ex *Exchange) ApiKeyPostOrder(mapParams map[string]string, strRequestPath string) map[string]string {
 	strMethod := "POST"
 	timestamp := time.Now().UTC().Format("2006-01-02T15:04:05")
 	/*
@@ -234,7 +278,7 @@ func ApiKeyPostOrder(mapParams map[string]string, strRequestPath string) map[str
 	*/
 
 	mapParams2Sign := make(map[string]string)
-	mapParams2Sign["AccessKeyId"] = accessKey
+	mapParams2Sign["AccessKeyId"] = ex.accessKey
 	mapParams2Sign["SignatureMethod"] = "HmacSHA256"
 	mapParams2Sign["SignatureVersion"] = "2"
 	mapParams2Sign["Timestamp"] = timestamp
@@ -242,7 +286,7 @@ func ApiKeyPostOrder(mapParams map[string]string, strRequestPath string) map[str
 	mapParams2Sign["type"] = "api"
 	hostName := HOST_NAME
 
-	mapParams2Sign["Signature"] = CreateSign(mapParams2Sign, strMethod, hostName, strRequestPath, secretKey)
+	mapParams2Sign["Signature"] = CreateSign(mapParams2Sign, strMethod, hostName, strRequestPath, ex.secretKey)
 
 	//strUrl := TRADE_URL + strRequestPath + "?" + Map2UrlQuery(MapValueEncodeURI(mapParams2Sign))
 	return mapParams2Sign
@@ -267,6 +311,19 @@ func CreateSign(mapParams map[string]string, strMethod, strHostUrl, strRequestPa
 	strPayload := strMethod + "\n" + strHostUrl + "\n" + strRequestPath + "\n" + strParams
 	return ComputeHmac256(strPayload, strSecretKey)
 }
+
+//func ContractSign(mapParams map[string]string, strMethod, strHostUrl, strRequestPath, strSecretKey string) string {
+//	// 参数处理, 按API要求, 参数名应按ASCII码进行排序(使用UTF-8编码, 其进行URI编码, 16进制字符必须大写)
+//	mapCloned := make(map[string]string)
+//	for key, value := range mapParams {
+//		mapCloned[key] = url.QueryEscape(value)
+//	}
+//
+//	strParams := Map2UrlQueryBySort(mapCloned)
+//
+//	strPayload := strMethod + "\n" + strHostUrl + "\n" + strRequestPath + "\n" + strParams
+//	return ComputeHmac256(strPayload, strSecretKey)
+//}
 
 // 对Map按着ASCII码进行排序
 // mapValue: 需要进行排序的map
@@ -294,7 +351,6 @@ func MapValueEncodeURI(mapValue map[string]string) map[string]string {
 		valueEncodeURI := url.QueryEscape(value)
 		mapValue[key] = valueEncodeURI
 	}
-
 	return mapValue
 }
 
