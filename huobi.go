@@ -294,3 +294,48 @@ func (ex *Exchange) GetOptionPositionInfo() *ContractAggregate {
 	}
 	return agg
 }
+
+func (ex *Exchange) GetAssetValuation(accountType string, valuationCurrency string) (string, error) {
+	mapParams := make(map[string]string)
+	mapParams["accountType"] = accountType
+	mapParams["valuationCurrency"] = valuationCurrency
+	strRequestUrl := "/v2/account/asset-valuation"
+	resp := ex.ApiKeyGet(mapParams, strRequestUrl)
+	if gjson.Get(resp, "code").Int() == 200 {
+		return resp, nil
+	}
+	return resp, errors.New(resp)
+}
+
+func (ex *Exchange) GetContractBalanceValuation(valuation_asset string) (string, error) {
+	mapParams := make(map[string]string)
+	mapParams["valuation_asset"] = valuation_asset
+	strUrl := "/api/v1/contract_balance_valuation"
+	resp := ex.ContractKeyPost(mapParams, strUrl)
+	if gjson.Get(resp, "status").String() == "ok" {
+		return resp, nil
+	}
+	return resp, errors.New(resp)
+}
+
+func (ex *Exchange) GetSwapBalanceValuation(valuation_asset string) (string, error) {
+	mapParams := make(map[string]string)
+	mapParams["valuation_asset"] = valuation_asset
+	strUrl := "/swap-api/v1/swap_balance_valuation"
+	resp := ex.ContractKeyPost(mapParams, strUrl)
+	if gjson.Get(resp, "status").String() == "ok" {
+		return resp, nil
+	}
+	return resp, errors.New(resp)
+}
+
+func (ex *Exchange) GetLinearSwapBalanceValuation(valuation_asset string) (string, error) {
+	mapParams := make(map[string]string)
+	mapParams["valuation_asset"] = valuation_asset
+	strUrl := "/linear-swap-api/v1/swap_balance_valuation"
+	resp := ex.ContractKeyPost(mapParams, strUrl)
+	if gjson.Get(resp, "status").String() == "ok" {
+		return resp, nil
+	}
+	return resp, errors.New(resp)
+}
